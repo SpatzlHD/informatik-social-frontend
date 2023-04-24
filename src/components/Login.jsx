@@ -3,11 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import UserContext from "../context/user-context";
 
-function Register() {
+function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
-  const [password2, setPassword2] = useState("");
+
   const [error, setError] = useState("");
   const [username, setUsername] = useState("");
 
@@ -15,33 +15,29 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== password2) {
-      setError("Passwords do not match");
-      alert("Passwords do not match");
-    } else {
-      setError("");
-      const user = { email, password, username };
-      const res = await axios.post("http://localhost:3001/register", user);
-      if (res.data.code === 200) {
-        setUser({
-          accessToken: res.data.accessToken,
+
+    const user = { username, password };
+    const res = await axios.post("http://localhost:3001/login", user);
+    console.log(res.data);
+    if (res.data.code === 200) {
+      setUser({
+        accessToken: res.data.accessToken,
+        username: res.data.username,
+        userID: res.data.userID,
+        profileImage: res.data.profileImage,
+      });
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          refreshToken: res.data.refreshToken,
           username: res.data.username,
-          userID: res.data.userID,
           profileImage: res.data.profileImage,
-        });
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            refreshToken: res.data.refreshToken,
-            username: res.data.username,
-            profileImage: res.data.profileImage,
-            userID: res.data.userID,
-          })
-        );
-        navigate("/");
-      } else {
-        setError(res.data.message);
-      }
+          userID: res.data.userID,
+        })
+      );
+      navigate("/");
+    } else {
+      setError(res.data.message);
     }
   };
   return (
@@ -61,7 +57,7 @@ function Register() {
         >
           <div class="max-w-xl lg:max-w-3xl">
             <h1 class="mt-6 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl md:text-4xl">
-              Create an account
+              Login to your account
             </h1>
 
             <form action="#" class="mt-8 grid grid-cols-6 gap-6">
@@ -86,25 +82,6 @@ function Register() {
 
               <div class="col-span-6">
                 <label
-                  for="Email"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-200"
-                >
-                  Email
-                </label>
-
-                <input
-                  type="email"
-                  id="Email"
-                  name="email"
-                  class="mt-1 w-full rounded-md border-gray-200 bg-white text-sm text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                  }}
-                />
-              </div>
-
-              <div class="col-span-6 sm:col-span-3">
-                <label
                   for="Password"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-200"
                 >
@@ -122,40 +99,21 @@ function Register() {
                 />
               </div>
 
-              <div class="col-span-6 sm:col-span-3">
-                <label
-                  for="PasswordConfirmation"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-200"
-                >
-                  Password Confirmation
-                </label>
-
-                <input
-                  type="password"
-                  id="PasswordConfirmation"
-                  name="password_confirmation"
-                  class="mt-1 w-full rounded-md border-gray-200 bg-white text-sm text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                  onChange={(e) => {
-                    setPassword2(e.target.value);
-                  }}
-                />
-              </div>
-
               <div class="col-span-6 sm:flex sm:items-center sm:gap-4">
                 <button
                   class="inline-block shrink-0 rounded-md border border-blue-600 bg-blue-600 px-12 py-3 text-sm font-medium text-white transition hover:bg-transparent hover:text-blue-600 focus:outline-none focus:ring active:text-blue-500 dark:hover:bg-blue-700 dark:hover:text-white"
                   onClick={(e) => handleSubmit(e)}
                 >
-                  Create an account
+                  Login
                 </button>
 
                 <p class="mt-4 text-sm text-gray-500 dark:text-gray-400 sm:mt-0">
-                  Already have an account?
+                  Don't have an account?
                   <Link
-                    to="/login"
+                    to="/register"
                     class="text-gray-700 ml-1 underline dark:text-gray-200"
                   >
-                    Log in
+                    Register
                   </Link>
                   .
                 </p>
@@ -168,4 +126,4 @@ function Register() {
   );
 }
 
-export default Register;
+export default Login;

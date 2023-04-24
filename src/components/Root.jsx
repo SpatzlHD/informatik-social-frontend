@@ -1,11 +1,25 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+import {
+  Outlet,
+  Link,
+  useLocation,
+  useSearchParams,
+  useParams,
+} from "react-router-dom";
 import UserContext from "../context/user-context";
-import { useContext, useState } from "react";
-import axios from "axios";
+import { useContext, useState, useEffect } from "react";
+
+import { Footer } from "./";
+import { io } from "socket.io-client";
+
+const socketClient = io("http://localhost:3001");
 
 function Root() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const params = searchParams.get("p");
+  console.log(params);
   const location = useLocation();
-  const { user } = useContext(UserContext);
+
+  const { user, socket, setSocket } = useContext(UserContext);
   const { pathname } = location;
   const [modal, setModal] = useState(false);
   const [post, setPost] = useState({
@@ -21,7 +35,23 @@ function Root() {
     }
   };
 
-  console.log(user);
+  useEffect(() => {
+    if (user) {
+      socketClient.auth = { token: user.accessToken };
+      socketClient.connect();
+      console.log("connected to socket");
+    }
+
+    socketClient.on("disconnect", () => {
+      console.log("disconnected from socket");
+    });
+
+    setSocket(socketClient);
+
+    return () => {
+      socketClient.disconnect();
+    };
+  }, [user, setSocket]);
 
   const handlePostSubmit = (e) => {
     e.preventDefault();
@@ -33,15 +63,18 @@ function Root() {
       content: "",
       createdAt: "",
     });
+
+    socket.emit("newPost", postData);
     setModal(false);
-    axios({
-      method: "post",
-      url: "http://localhost:3001/posts",
-      headers: {
-        Authorization: `Bearer ${user.accessToken}`,
-      },
-      data: postData,
-    });
+    document.body.classList.remove("overflow-hidden");
+    // axios({
+    //   method: "post",
+    //   url: "http://localhost:3001/posts",
+    //   headers: {
+    //     Authorization: `Bearer ${user.accessToken}`,
+    //   },
+    //   data: postData,
+    // });
   };
 
   if (pathname === "/login" || pathname === "/register") {
@@ -130,12 +163,15 @@ function Root() {
         <main>
           <Outlet />
         </main>
+        <Footer />
       </>
     );
+  } else if (pathname == "/profile") {
+    return <Outlet />;
   } else {
     return (
       <>
-        <header aria-label="Page Header" class="bg-slate-800">
+        <header aria-label="Page Header" class="bg-slate-800 ">
           <div class="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8">
             <div class="flex items-center justify-end gap-4">
               <div class="flex items-center gap-4">
@@ -201,10 +237,11 @@ function Root() {
             </div>
           </div>
         </header>
-        <main className="bg-slate-900">
+        <main className="bg-slate-900 h-full">
           <Outlet />
+
           {modal && (
-            <div class="bg-slate-800 bg-opacity-50 flex justify-center items-center absolute top-0 right-0 bottom-0 left-0 ">
+            <div class="bg-slate-800 bg-opacity-50 flex justify-center items-center  top-0 right-0 bottom-0 left-0 fixed">
               <form>
                 <div class="w-96 mb-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 shadow-lg shadow-slate-600">
                   <div class="px-4 py-2 bg-white rounded-t-lg dark:bg-gray-800">
@@ -245,7 +282,11 @@ function Root() {
           <div className=" fixed bottom-10 right-10">
             <button
               class="inline-flex items-center justify-center w-10 h-10 mr-2 text-indigo-100 transition-colors duration-150 bg-indigo-700 rounded-lg focus:shadow-outline hover:bg-indigo-800"
-              onClick={() => setModal(true)}
+              onClick={() => {
+                setModal(true);
+
+                document.body.classList.add("overflow-hidden");
+              }}
             >
               <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
                 <path
@@ -257,6 +298,7 @@ function Root() {
             </button>
           </div>
         </main>
+        <Footer />
       </>
     );
   }
